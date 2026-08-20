@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -112,7 +111,8 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/payment/initialize', authenticateToken, async (req, res) => {
   const user_id = req.user.id;
-  const amount = 50000;
+  const amount = parseInt(process.env.AMOUNT) || 50000;
+  const currency = process.env.CURRENCY || 'UGX';
   const tx_ref = `UPP_${Date.now()}_${user_id}`;
   try {
     const response = await axios.post(
@@ -120,15 +120,15 @@ app.post('/api/payment/initialize', authenticateToken, async (req, res) => {
       {
         tx_ref,
         amount,
-        currency: 'UGX',
+        currency,
         redirect_url: `${process.env.BACKEND_URL}/api/payment/verify`,
         customer: { email: req.user.email },
         customizations: {
           title: 'Universal Pen Pals Membership',
           description: 'Membership fee for Universal Pen Pals',
         },
-        payment_options: 'card,mobilemoneyuganda',
-        meta: { user_id: user_id }
+        payment_options: 'card,mobilemoneyuganda,mpesa,banktransfer,ussd',
+        meta: { user_id }
       },
       {
         headers: {
@@ -180,6 +180,13 @@ app.get('/api/profile', authenticateToken, (req, res) => {
     if (err) return res.status(500).json({ error: 'Database error' });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
+  });
+});
+
+app.get('/api/config', (req, res) => {
+  res.json({
+    amount: parseInt(process.env.AMOUNT) || 50000,
+    currency: process.env.CURRENCY || 'UGX'
   });
 });
 
