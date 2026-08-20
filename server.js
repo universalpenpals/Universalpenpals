@@ -1,9 +1,11 @@
+
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -12,7 +14,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const db = new sqlite3.Database('./penpals.db', (err) => {
+const diskPath = process.env.RENDER_DISK_PATH || '.';
+const dbPath = path.join(diskPath, 'penpals.db');
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) console.error('Database connection error:', err);
   else console.log('Connected to SQLite database.');
 });
