@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Pen Pals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background: #1e3c72;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #1e3c72;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .button:hover {
+            background: #2a5298;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #1e3c72;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Universal Pen Pals</h1>
+        <p>Connect. Make Friends. Discover the World.</p>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <a href="#register">Register</a>
+            <a href="#login">Login</a>
+        </nav>
+    </header>
+
+    <div class="container" id="home">
+        <h2>Meet Pen Pals Around the World</h2>
+        <p>Universal Pen Pals is a platform where people from different countries can connect, communicate, make friendships and learn about different cultures.</p>
+        <a href="#register" class="button">Become a Member</a>
+    </div>
+
+    <div class="container" id="about">
+        <h2>About Universal Pen Pals</h2>
+        <p><strong>Global Friends</strong><br>Meet people from different countries and cultures.</p>
+        <p><strong>Membership Fee</strong><br>UGX 50,000 (Payment required before membership access).</p>
+    </div>
+
+    <div class="container" id="register">
+        <h2>Register</h2>
+        <form id="registerForm">
+            <input type="text" id="name" placeholder="Full Name" required>
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="text" id="country" placeholder="Your Country" required>
+            <input type="password" id="password" placeholder="Create a Password" required>
+            <div id="message" class="message"></div>
+            <button type="submit" class="button">Register</button>
+        </form>
+    </div>
+
+    <div class="container" id="login">
+        <h2>Member Login</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email Address" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <div id="loginMessage" class="message"></div>
+            <button type="submit" class="button">Login</button>
+        </form>
+    </div>
+
+    <footer>
+        <p>© 2026 Universal Pen Pals</p>
+        <p>Connect with the world 🌍</p>
+    </footer>
+
+    <script>
+        const API_URL = 'https://your-render-backend.onrender.com/api'; // Change this later!
+
+        // Register function
+        async function registerUser(event) {
+            event.preventDefault();
+            const full_name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const country = document.getElementById('country').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name, email, country, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('message').innerHTML = 'Registration successful! Please login to complete payment.';
+                    document.getElementById('message').style.color = 'green';
+                } else {
+                    document.getElementById('message').innerHTML = data.error || 'Registration failed';
+                    document.getElementById('message').style.color = 'red';
+                }
+            } catch (error) {
+                document.getElementById('message').innerHTML = 'Network error';
+                document.getElementById('message').style.color = 'red';
+            }
+        }
+
+        // Login function
+        async function loginUser(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    document.getElementById('loginMessage').innerHTML = `Welcome, ${data.user.full_name}!`;
+                    document.getElementById('loginMessage').style.color = 'green';
+                    if (data.user.payment_status === 'pending') {
+                        document.getElementById('loginMessage').innerHTML += '<br><button class="button" onclick="initializePayment()">Complete Payment (UGX 50,000)</button>';
+                    }
+                } else {
+                    document.getElementById('loginMessage').innerHTML = data.error || 'Login failed';
+                    document.getElementById('loginMessage').style.color = 'red';
+                }
+            } catch (error) {
+                document.getElementById('loginMessage').innerHTML = 'Network error';
+                document.getElementById('loginMessage').style.color = 'red';
+            }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', registerUser);
+        document.getElementById('loginForm').addEventListener('submit', loginUser);
+    </script>
+</body>
+              </html>
