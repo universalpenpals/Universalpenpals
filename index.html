@@ -42,16 +42,18 @@
             border-radius: 5px;
             cursor: pointer;
             text-decoration: none;
+            display: inline-block;
         }
         .button:hover {
             background: #2a5298;
         }
-        input, select {
+        input {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         .message {
             padding: 10px;
@@ -64,6 +66,10 @@
             background: #1e3c72;
             color: white;
             margin-top: 20px;
+        }
+        #feeDisplay {
+            font-weight: bold;
+            color: #1e3c72;
         }
     </style>
 </head>
@@ -88,7 +94,7 @@
     <div class="container" id="about">
         <h2>About Universal Pen Pals</h2>
         <p><strong>Global Friends</strong><br>Meet people from different countries and cultures.</p>
-        <p><strong>Membership Fee</strong><br>UGX 50,000 (Payment required before membership access).</p>
+        <p><strong>Membership Fee</strong><br><span id="feeDisplay">Loading...</span></p>
     </div>
 
     <div class="container" id="register">
@@ -119,7 +125,19 @@
     </footer>
 
     <script>
-        const API_URL = 'https://your-render-backend.onrender.com/api'; // Change this later!
+        const API_URL = 'https://universal-penpals-api.onrender.com/api';
+
+        // Fetch price from backend so it matches Render
+        async function fetchFee() {
+            try {
+                const res = await fetch(`${API_URL}/config`);
+                const data = await res.json();
+                document.getElementById('feeDisplay').innerText = `${data.currency} ${data.amount.toLocaleString()} (Payment required before membership access.)`;
+            } catch {
+                document.getElementById('feeDisplay').innerText = 'UGX 50,000 (Payment required before membership access.)';
+            }
+        }
+        fetchFee();
 
         // Register function
         async function registerUser(event) {
@@ -136,12 +154,13 @@
                     body: JSON.stringify({ full_name, email, country, password })
                 });
                 const data = await res.json();
+                const messageDiv = document.getElementById('message');
                 if (res.ok) {
-                    document.getElementById('message').innerHTML = 'Registration successful! Please login to complete payment.';
-                    document.getElementById('message').style.color = 'green';
+                    messageDiv.innerHTML = 'Registration successful! Please login to complete payment.';
+                    messageDiv.style.color = 'green';
                 } else {
-                    document.getElementById('message').innerHTML = data.error || 'Registration failed';
-                    document.getElementById('message').style.color = 'red';
+                    messageDiv.innerHTML = data.error || 'Registration failed';
+                    messageDiv.style.color = 'red';
                 }
             } catch (error) {
                 document.getElementById('message').innerHTML = 'Network error';
@@ -162,16 +181,17 @@
                     body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
+                const messageDiv = document.getElementById('loginMessage');
                 if (res.ok) {
                     localStorage.setItem('token', data.token);
-                    document.getElementById('loginMessage').innerHTML = `Welcome, ${data.user.full_name}!`;
-                    document.getElementById('loginMessage').style.color = 'green';
+                    messageDiv.innerHTML = `Welcome, ${data.user.full_name}!`;
+                    messageDiv.style.color = 'green';
                     if (data.user.payment_status === 'pending') {
-                        document.getElementById('loginMessage').innerHTML += '<br><button class="button" onclick="initializePayment()">Complete Payment (UGX 50,000)</button>';
+                        messageDiv.innerHTML += '<br><button class="button" onclick="initializePayment()">Complete Payment (UGX 50,000)</button>';
                     }
                 } else {
-                    document.getElementById('loginMessage').innerHTML = data.error || 'Login failed';
-                    document.getElementById('loginMessage').style.color = 'red';
+                    messageDiv.innerHTML = data.error || 'Login failed';
+                    messageDiv.style.color = 'red';
                 }
             } catch (error) {
                 document.getElementById('loginMessage').innerHTML = 'Network error';
@@ -179,8 +199,45 @@
             }
         }
 
+        // Initialize payment
+        async function initializePayment() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/payment/initialize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.authorization_url) {
+                    window.location.href = data.authorization_url;
+                } else {
+                    alert(data.error || 'Payment initialization failed');
+                }
+            } catch (error) {
+                alert('Network error');
+            }
+        }
+
+        // Check for payment callback
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const paymentStatus = params.get('payment');
+            if (paymentStatus === 'success') {
+                alert('Payment successful! You can now login.');
+            } else if (paymentStatus === 'failed') {
+                alert('Payment failed. Please try again.');
+            }
+        });
+
         document.getElementById('registerForm').addEventListener('submit', registerUser);
         document.getElementById('loginForm').addEventListener('submit', loginUser);
     </script>
 </body>
-              </html>
+    </html>
