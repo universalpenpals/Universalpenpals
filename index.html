@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,9 +126,10 @@
     </footer>
 
     <script>
-        https://universal-penpals-api.onrender.com/api
+        // ✅ CORRECT: API URL defined properly
+        const API_URL = 'https://universal-penpals-api.onrender.com/api';
 
-        // Fetch price from backend so it matches Render
+        // Fetch price from backend
         async function fetchFee() {
             try {
                 const res = await fetch(`${API_URL}/config`);
@@ -139,7 +141,7 @@
         }
         fetchFee();
 
-        // Register function
+        // ✅ Register function
         async function registerUser(event) {
             event.preventDefault();
             const full_name = document.getElementById('name').value;
@@ -156,19 +158,19 @@
                 const data = await res.json();
                 const messageDiv = document.getElementById('message');
                 if (res.ok) {
-                    messageDiv.innerHTML = 'Registration successful! Please login to complete payment.';
+                    messageDiv.innerHTML = '✅ Registration successful! Please login to complete payment.';
                     messageDiv.style.color = 'green';
                 } else {
-                    messageDiv.innerHTML = data.error || 'Registration failed';
+                    messageDiv.innerHTML = '❌ ' + (data.error || 'Registration failed');
                     messageDiv.style.color = 'red';
                 }
             } catch (error) {
-                document.getElementById('message').innerHTML = 'Network error';
+                document.getElementById('message').innerHTML = '❌ Network error';
                 document.getElementById('message').style.color = 'red';
             }
         }
 
-        // Login function
+        // ✅ Login function (FIXED)
         async function loginUser(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -182,24 +184,28 @@
                 });
                 const data = await res.json();
                 const messageDiv = document.getElementById('loginMessage');
+
                 if (res.ok) {
                     localStorage.setItem('token', data.token);
-                    messageDiv.innerHTML = `Welcome, ${data.user.full_name}!`;
+                    messageDiv.innerHTML = `✅ Welcome, ${data.user.full_name}!`;
                     messageDiv.style.color = 'green';
+                    
+                    // Show payment button if payment is pending
                     if (data.user.payment_status === 'pending') {
                         messageDiv.innerHTML += '<br><button class="button" onclick="initializePayment()">Complete Payment (UGX 50,000)</button>';
                     }
                 } else {
-                    messageDiv.innerHTML = data.error || 'Login failed';
+                    // ❌ FIXED: This only shows on actual login failure
+                    messageDiv.innerHTML = '❌ ' + (data.error || 'Login failed');
                     messageDiv.style.color = 'red';
                 }
             } catch (error) {
-                document.getElementById('loginMessage').innerHTML = 'Network error';
+                document.getElementById('loginMessage').innerHTML = '❌ Network error';
                 document.getElementById('loginMessage').style.color = 'red';
             }
         }
 
-        // Initialize payment
+        // ✅ Initialize payment
         async function initializePayment() {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -225,19 +231,20 @@
             }
         }
 
-        // Check for payment callback
+        // ✅ Check for payment callback (FIXED - moved OUTSIDE the login function)
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const paymentStatus = params.get('payment');
             if (paymentStatus === 'success') {
-                alert('Payment successful! You can now login.');
+                alert('✅ Payment successful! You can now login.');
             } else if (paymentStatus === 'failed') {
-                alert('Payment failed. Please try again.');
+                alert('❌ Payment failed. Please try again.');
             }
         });
 
+        // ✅ Attach event listeners
         document.getElementById('registerForm').addEventListener('submit', registerUser);
         document.getElementById('loginForm').addEventListener('submit', loginUser);
     </script>
 </body>
-    </html>
+</html>
