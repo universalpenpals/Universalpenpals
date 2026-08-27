@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
-const path = require('path');
+const { createClient } = require('@libsql/client');
 require('dotenv').config();
 
 const app = express();
@@ -13,38 +12,45 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const diskPath = process.env.RENDER_DISK_PATH || '.';
-const dbPath = path.join(diskPath, 'penpals.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) console.error('Database connection error:', err);
-  else console.log('Connected to SQLite database.');
+// Connect to Turso (cloud SQLite)
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      full_name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      country TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      payment_status TEXT DEFAULT 'pending',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS payments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      tx_ref TEXT UNIQUE NOT NULL,
-      amount REAL NOT NULL,
-      status TEXT DEFAULT 'pending',
-      paid_at DATETIME,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
-});
+// Create tables
+async function initDB() {
+  try {
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        country TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        payment_status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        tx_ref TEXT UNIQUE NOT NULL,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        paid_at DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+    console.log('✅ Turso database connected and tables ready');
+  } catch (err) {
+    console.error('❌ Database init error:', err);
+  }
+}
+initDB();
 
+// Authenticate JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -56,37 +62,58 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// Helper: Get user by email
+async function getUserByEmail(email) {
+  const result = await db.execute({
+    sql: 'SELECT * FROM users WHERE email = ?',
+    args: [email],
+  });
+  return result.rows[0];
+}
+
+// Helper: Get user by ID
+async function getUserById(id) {
+  const result = await db.execute({
+    sql: 'SELECT id, full_name, email, country, payment_status, created_at FROM users WHERE id = ?',
+    args: [id],
+  });
+  return result.rows[0];
+}
+
+// Register endpoint
 app.post('/api/register', async (req, res) => {
   const { full_name, email, country, password } = req.body;
   if (!full_name || !email || !country || !password) {
     return res.status(400).json({ error: 'All fields are required' });
   }
   try {
-    db.get('SELECT id FROM users WHERE email = ?', [email], async (err, row) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (row) return res.status(409).json({ error: 'Email already registered' });
-      const password_hash = await bcrypt.hash(password, 10);
-      db.run(
-        'INSERT INTO users (full_name, email, country, password_hash) VALUES (?, ?, ?, ?)',
-        [full_name, email, country, password_hash],
-        function (err) {
-          if (err) return res.status(500).json({ error: 'Registration failed' });
-          res.status(201).json({ message: 'Registration successful. Please login and complete payment.', user_id: this.lastID });
-        }
-      );
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    const password_hash = await bcrypt.hash(password, 10);
+    const result = await db.execute({
+      sql: 'INSERT INTO users (full_name, email, country, password_hash) VALUES (?, ?, ?, ?)',
+      args: [full_name, email, country, password_hash],
+    });
+    res.status(201).json({
+      message: 'Registration successful. Please login and complete payment.',
+      user_id: result.lastInsertRowid,
     });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
+// Login endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
-  db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
+  try {
+    const user = await getUserByEmail(email);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
@@ -103,12 +130,16 @@ app.post('/api/login', async (req, res) => {
         full_name: user.full_name,
         email: user.email,
         country: user.country,
-        payment_status: user.payment_status
-      }
+        payment_status: user.payment_status,
+      },
     });
-  });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
+// Initialize payment
 app.post('/api/payment/initialize', authenticateToken, async (req, res) => {
   const user_id = req.user.id;
   const amount = parseInt(process.env.AMOUNT) || 50000;
@@ -128,20 +159,19 @@ app.post('/api/payment/initialize', authenticateToken, async (req, res) => {
           description: 'Membership fee for Universal Pen Pals',
         },
         payment_options: 'card,mobilemoneyuganda,mpesa,banktransfer,ussd',
-        meta: { user_id }
+        meta: { user_id },
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
-    db.run(
-      'INSERT INTO payments (user_id, tx_ref, amount, status) VALUES (?, ?, ?, ?)',
-      [user_id, tx_ref, amount, 'pending'],
-      (err) => { if (err) console.error('Failed to save payment:', err); }
-    );
+    await db.execute({
+      sql: 'INSERT INTO payments (user_id, tx_ref, amount, status) VALUES (?, ?, ?, ?)',
+      args: [user_id, tx_ref, amount, 'pending'],
+    });
     res.json({ authorization_url: response.data.data.link, tx_ref });
   } catch (error) {
     console.error('Flutterwave init error:', error.response?.data || error.message);
@@ -149,6 +179,7 @@ app.post('/api/payment/initialize', authenticateToken, async (req, res) => {
   }
 });
 
+// Verify payment
 app.get('/api/payment/verify', async (req, res) => {
   const { tx_ref, transaction_id } = req.query;
   if (!tx_ref) return res.status(400).send('Missing transaction reference');
@@ -156,15 +187,26 @@ app.get('/api/payment/verify', async (req, res) => {
     const response = await axios.get(
       `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`,
       {
-        headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` }
+        headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
       }
     );
     const data = response.data.data;
     if (data.status === 'successful' && data.tx_ref === tx_ref) {
-      db.run('UPDATE payments SET status = ?, paid_at = CURRENT_TIMESTAMP WHERE tx_ref = ?', ['success', tx_ref]);
-      db.get('SELECT user_id FROM payments WHERE tx_ref = ?', [tx_ref], (err, row) => {
-        if (row) db.run('UPDATE users SET payment_status = ? WHERE id = ?', ['paid', row.user_id]);
+      await db.execute({
+        sql: 'UPDATE payments SET status = ?, paid_at = CURRENT_TIMESTAMP WHERE tx_ref = ?',
+        args: ['success', tx_ref],
       });
+      const result = await db.execute({
+        sql: 'SELECT user_id FROM payments WHERE tx_ref = ?',
+        args: [tx_ref],
+      });
+      if (result.rows.length > 0) {
+        const user_id = result.rows[0].user_id;
+        await db.execute({
+          sql: 'UPDATE users SET payment_status = ? WHERE id = ?',
+          args: ['paid', user_id],
+        });
+      }
       res.redirect(`${process.env.FRONTEND_URL}/?payment=success`);
     } else {
       res.redirect(`${process.env.FRONTEND_URL}/?payment=failed`);
@@ -175,21 +217,25 @@ app.get('/api/payment/verify', async (req, res) => {
   }
 });
 
-app.get('/api/profile', authenticateToken, (req, res) => {
-  db.get('SELECT id, full_name, email, country, payment_status, created_at FROM users WHERE id = ?', [req.user.id], (err, user) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
+// Get user profile
+app.get('/api/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await getUserById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
-  });
+  } catch (error) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
+// Get config (for frontend)
 app.get('/api/config', (req, res) => {
   res.json({
     amount: parseInt(process.env.AMOUNT) || 50000,
-    currency: process.env.CURRENCY || 'UGX'
+    currency: process.env.CURRENCY || 'UGX',
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
