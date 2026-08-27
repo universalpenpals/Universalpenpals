@@ -395,23 +395,24 @@
     </footer>
 
     <script>
+        // ✅ CORRECT API URL
         const API_URL = 'https://universal-penpals-api.onrender.com/api';
 
+        // ✅ Fetch price from backend
         async function fetchFee() {
             try {
                 const res = await fetch(`${API_URL}/config`);
                 const data = await res.json();
-                document.querySelectorAll('.price').forEach(el => {
-                    if (el.innerText.includes('35,000')) el.innerHTML = `${data.currency} 35,000 <small>/ month</small>`;
-                });
-            } catch (e) {
-                console.log('Using default pricing.');
+                document.getElementById('feeDisplay').innerText = `${data.currency} ${data.amount.toLocaleString()} (Payment required before membership access.)`;
+            } catch {
+                document.getElementById('feeDisplay').innerText = 'UGX 50,000 (Payment required before membership access.)';
             }
         }
         fetchFee();
 
-        async function registerUser(e) {
-            e.preventDefault();
+        // ✅ Register function
+        async function registerUser(event) {
+            event.preventDefault();
             const full_name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const country = document.getElementById('country').value;
@@ -438,8 +439,9 @@
             }
         }
 
-        async function loginUser(e) {
-            e.preventDefault();
+        // ✅ Login function
+        async function loginUser(event) {
+            event.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const msgDiv = document.getElementById('loginMessage');
@@ -465,11 +467,12 @@
                     msgDiv.style.color = 'red';
                 }
             } catch (error) {
-                msgDiv.innerHTML = '❌ Network error.';
+                msgDiv.innerHTML = '❌ Network error. Is the backend running?';
                 msgDiv.style.color = 'red';
             }
         }
 
+        // ✅ Initialize payment
         async function initializePayment() {
             const token = localStorage.getItem('token');
             if (!token) { alert('Please login first.'); return; }
@@ -492,6 +495,7 @@
             }
         }
 
+        // ✅ Check for payment callback
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const status = params.get('payment');
@@ -499,8 +503,9 @@
             else if (status === 'failed') alert('❌ Payment failed. Please try again.');
         });
 
+        // ✅ Attach event listeners
         document.getElementById('registerForm').addEventListener('submit', registerUser);
         document.getElementById('loginForm').addEventListener('submit', loginUser);
     </script>
 </body>
-</html>
+                        </html>
