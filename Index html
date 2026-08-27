@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Universal Pen Pals – Global Friendships</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e3c72;
+        }
+        .logo span {
+            color: #f59e0b;
+        }
+        .nav-links a {
+            margin-left: 24px;
+            text-decoration: none;
+            color: #4b5563;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #1e3c72;
+        }
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #1e3c72;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2a5298;
+            transform: scale(1.02);
+        }
+        .btn-outline {
+            background: transparent;
+            color: #1e3c72;
+            border: 2px solid #1e3c72;
+        }
+        .btn-outline:hover {
+            background: #1e3c72;
+            color: white;
+        }
+        .btn-gold {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-gold:hover {
+            background: #d97706;
+        }
+        .hero {
+            padding: 60px 0 80px;
+            text-align: center;
+            background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .hero h1 span {
+            color: #1e3c72;
+        }
+        .hero p {
+            font-size: 20px;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+        .hero-buttons .btn {
+            margin: 0 8px;
+        }
+        .features {
+            padding: 60px 0;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid #f3f4f6;
+        }
+        .feature-card h3 {
+            margin: 16px 0 8px;
+            font-size: 20px;
+        }
+        .feature-card p {
+            color: #6b7280;
+            font-size: 15px;
+        }
+        .icon-big {
+            font-size: 40px;
+        }
+        .pricing {
+            padding: 60px 0;
+            background: #ffffff;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-title h2 {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        .section-title p {
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        .pricing-card {
+            background: #f9fafb;
+            padding: 40px 30px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+        .pricing-card:hover {
+            border-color: #1e3c72;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        .pricing-card.popular {
+            border: 2px solid #f59e0b;
+            background: #fffbeb;
+        }
+        .pricing-card h3 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+        .pricing-card .price {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 16px 0;
+        }
+        .pricing-card .price small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #6b7280;
+        }
+        .pricing-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 24px 0;
+        }
+        .pricing-card ul li {
+            padding: 6px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .badge {
+            background: #f59e0b;
+            color: white;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        .auth-section {
+            padding: 60px 0;
+            background: #f9fafb;
+        }
+        .auth-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        @media (max-width: 768px) {
+            .auth-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .auth-box h3 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .auth-box input {
+            width: 100%;
+            padding: 12px 16px;
+            margin: 8px 0 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .auth-box .btn {
+            width: 100%;
+            text-align: center;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        footer {
+            background: #1e293b;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        footer a {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 32px; }
+            .nav-links a { margin-left: 12px; font-size: 14px; }
+            .header-flex { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-flex">
+            <div class="logo">Universal<span>PenPals</span></div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#auth" class="btn btn-primary" style="padding: 8px 20px;">Join Now</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Connect. Make Friends. <br/><span>Discover the World.</span></h1>
+            <p>Join a global community where you can find pen pals, share cultures, and build friendships across borders.</p>
+            <div class="hero-buttons">
+                <a href="#auth" class="btn btn-primary">Become a Member</a>
+                <a href="#auth" class="btn btn-outline">Log In</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Why Join Universal Pen Pals?</h2>
+            </div>
+            <div class="grid-3">
+                <div class="feature-card">
+                    <div class="icon-big">🌍</div>
+                    <h3>Global Friends</h3>
+                    <p>Meet people from over 50 countries and learn about new cultures.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-big">🔒</div>
+                    <h3>Secure & Verified</h3>
+                    <p>All members are verified. Your privacy and safety are our priority.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-big">💬</div>
+                    <h3>Real Connections</h3>
+                    <p>Exchange messages, share stories, and build meaningful friendships.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-title">
+                <h2>Choose Your Membership</h2>
+                <p>Select the tier that fits your journey. All plans include full access to the pen pal network.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Standard</h3>
+                    <div class="price">UGX 35,000 <small>/ month</small></div>
+                    <ul>
+                        <li>✅ Connect with 10 pen pals</li>
+                        <li>✅ Basic profile</li>
+                        <li>✅ Email support</li>
+                    </ul>
+                    <a href="#auth" class="btn btn-primary">Get Started</a>
+                </div>
+                <div class="pricing-card popular">
+                    <span class="badge">🔥 Most Popular</span>
+                    <h3>Premium</h3>
+                    <div class="price">UGX 58,000 <small>/ month</small></div>
+                    <ul>
+                        <li>✅ Unlimited pen pals</li>
+                        <li>✅ Featured profile</li>
+                        <li>✅ Priority messaging</li>
+                        <li>✅ Exclusive events</li>
+                    </ul>
+                    <a href="#auth" class="btn btn-gold">Join Premium</a>
+                </div>
+                <div class="pricing-card">
+                    <h3>VIP</h3>
+                    <div class="price">UGX 110,000 <small>/ month</small></div>
+                    <ul>
+                        <li>✅ Everything in Premium</li>
+                        <li>✅ Personal ambassador</li>
+                        <li>✅ Video introductions</li>
+                        <li>✅ Career networking</li>
+                    </ul>
+                    <a href="#auth" class="btn btn-primary">Go VIP</a>
+                </div>
+            </div>
+            <p style="text-align:center; margin-top:24px; color:#6b7280; font-size:14px;">* 40% off promotional offer valid until 30 November 2026.</p>
+        </div>
+    </section>
+
+    <section class="auth-section" id="auth">
+        <div class="container">
+            <div class="auth-grid">
+                <div class="auth-box" id="register">
+                    <h3>📝 Create Account</h3>
+                    <form id="registerForm">
+                        <input type="text" id="name" placeholder="Full Name" required />
+                        <input type="email" id="email" placeholder="Email Address" required />
+                        <input type="text" id="country" placeholder="Your Country" required />
+                        <input type="password" id="password" placeholder="Create Password" required />
+                        <div id="message" class="message"></div>
+                        <button type="submit" class="btn btn-primary">Register Now</button>
+                    </form>
+                </div>
+                <div class="auth-box" id="login">
+                    <h3>🔑 Member Login</h3>
+                    <form id="loginForm">
+                        <input type="email" id="loginEmail" placeholder="Email Address" required />
+                        <input type="password" id="loginPassword" placeholder="Password" required />
+                        <div id="loginMessage" class="message"></div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2026 Universal Pen Pals. All rights reserved.</p>
+            <p style="margin-top: 8px; font-size: 14px; color: #94a3b8;">
+                <a href="#">Privacy Policy</a> · <a href="#">Terms of Service</a> · Connect with the world 🌍
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = 'https://universal-penpals-api.onrender.com/api';
+
+        async function fetchFee() {
+            try {
+                const res = await fetch(`${API_URL}/config`);
+                const data = await res.json();
+                document.querySelectorAll('.price').forEach(el => {
+                    if (el.innerText.includes('35,000')) el.innerHTML = `${data.currency} 35,000 <small>/ month</small>`;
+                });
+            } catch (e) {
+                console.log('Using default pricing.');
+            }
+        }
+        fetchFee();
+
+        async function registerUser(e) {
+            e.preventDefault();
+            const full_name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const country = document.getElementById('country').value;
+            const password = document.getElementById('password').value;
+            const msgDiv = document.getElementById('message');
+
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name, email, country, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msgDiv.innerHTML = '✅ Registration successful! Please login.';
+                    msgDiv.style.color = 'green';
+                } else {
+                    msgDiv.innerHTML = '❌ ' + (data.error || 'Registration failed');
+                    msgDiv.style.color = 'red';
+                }
+            } catch (error) {
+                msgDiv.innerHTML = '❌ Network error. Is the backend running?';
+                msgDiv.style.color = 'red';
+            }
+        }
+
+        async function loginUser(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const msgDiv = document.getElementById('loginMessage');
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    msgDiv.innerHTML = `✅ Welcome, ${data.user.full_name}!`;
+                    msgDiv.style.color = 'green';
+                    if (data.user.payment_status === 'pending') {
+                        msgDiv.innerHTML += '<br><br><button class="btn btn-gold" onclick="initializePayment()">💳 Complete Payment (UGX 50,000)</button>';
+                    } else {
+                        msgDiv.innerHTML += '<br><br>🎉 You are an active member!';
+                    }
+                } else {
+                    msgDiv.innerHTML = '❌ ' + (data.error || 'Login failed');
+                    msgDiv.style.color = 'red';
+                }
+            } catch (error) {
+                msgDiv.innerHTML = '❌ Network error.';
+                msgDiv.style.color = 'red';
+            }
+        }
+
+        async function initializePayment() {
+            const token = localStorage.getItem('token');
+            if (!token) { alert('Please login first.'); return; }
+            try {
+                const res = await fetch(`${API_URL}/payment/initialize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.authorization_url) {
+                    window.location.href = data.authorization_url;
+                } else {
+                    alert(data.error || 'Payment init failed');
+                }
+            } catch (error) {
+                alert('Network error.');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('payment');
+            if (status === 'success') alert('✅ Payment successful! You can now login.');
+            else if (status === 'failed') alert('❌ Payment failed. Please try again.');
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', registerUser);
+        document.getElementById('loginForm').addEventListener('submit', loginUser);
+    </script>
+</body>
+</html>
